@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: chat-cdl
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:creative-digital-lab-chat}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:12345678}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  jpa:
+    hibernate:
+      # 과제 전용: 빈 DB 에서도 바로 뜨게 update 사용
+      # 실제 배포 환경에선 none 또는 validate 로 두고 마이그레이션 도구로 관리
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+        jdbc:
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+    show-sql: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 30
+          max-idle: 15
+          min-idle: 5
+        shutdown-timeout: 100ms
+
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 300
+      min-spare: 20
+    connection-timeout: 20000
+    max-connections: 8192
+    accept-count: 100
+
+logging:
+  level:
+    root: INFO
+    com.chat: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

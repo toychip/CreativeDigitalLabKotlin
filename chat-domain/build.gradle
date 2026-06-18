@@ -1,0 +1,8 @@
+plugins {
+    id 'chat-convention'
+}
+
+dependencies {
+    compileOnly libs.jackson.annotations
+    implementation libs.java.uuid.generator
+}

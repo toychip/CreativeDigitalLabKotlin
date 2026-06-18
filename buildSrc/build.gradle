@@ -1,0 +1,23 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+def plugin(provider) {
+    def dep = provider.get()
+    "${dep.pluginId}:${dep.pluginId}.gradle.plugin:${dep.version}"
+}
+
+dependencies {
+    implementation plugin(libs.plugins.spring.boot)
+    implementation plugin(libs.plugins.spring.dependency.management)
+    implementation plugin(libs.plugins.kotlin.jvm)
+    implementation plugin(libs.plugins.kotlin.spring)
+    implementation plugin(libs.plugins.kotlin.jpa)
+
+    implementation files(libs.class.superclass.protectionDomain.codeSource.location)
+}

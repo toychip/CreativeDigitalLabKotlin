@@ -1,0 +1,32 @@
+@host = http://localhost:8080
+# 위 @host 가 기본값. 환경(http-client.env.json)에서 local/nginx 선택 시 그 값으로 덮어씀.
+# 매 요청마다 client-id 는 달라야함.
+# 회원 등록 (인증 비목표 — userId 직접 지정, username 중복 허용)
+# 실행 순서: 이 파일 먼저 → session.http → message.http
+
+### 회원 등록 - alice (세션 생성자)
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "userId": "alice",
+  "username": "Alice"
+}
+
+### 회원 등록 - bob (1:1 상대)
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "userId": "bob",
+  "username": "Bob"
+}
+
+### (negative) userId 중복 등록 - 409 USER_ID_ALREADY_TAKEN 기대
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "userId": "alice",
+  "username": "Alice2"
+}

@@ -1,0 +1,20 @@
+@host = http://localhost:8080
+@sessionId = 0190a1b2-c3d4-7e5f-8a9b-000000000001
+# @sessionId 는 예시 기본값(단독 실행용). session.http 1번을 먼저 실행하면 실제 생성된 sessionId 가 이 값을 덮어씀.
+# @host 기본값은 환경(http-client.env.json)에서 local/nginx 선택 시 덮어씀.
+# 매 요청마다 client-id 는 달라야함.
+# 메시지 조회 (read model 커서 페이징)
+# 실데이터: session.http 1번 실행 → 실제 sessionId 캡처 후 메시지 WebSocket 전송.
+# 없는 세션(예시 기본값) → 404 SESSION_NOT_FOUND. 실제 세션인데 메시지 0건 → 빈 목록(200).
+
+### 1) 최신부터 (커서 없음, BEFORE)
+GET {{host}}/sessions/{{sessionId}}/messages/cursor?limit=50&direction=BEFORE
+
+### 2) 특정 seq 이전 - 과거 방향 (BEFORE)
+GET {{host}}/sessions/{{sessionId}}/messages/cursor?cursor=100&limit=50&direction=BEFORE
+
+### 3) 특정 seq 이후 - 최신 방향 (AFTER)
+GET {{host}}/sessions/{{sessionId}}/messages/cursor?cursor=0&limit=50&direction=AFTER
+
+### 4) limit 경계 (0 → 하한 1 보정 확인)
+GET {{host}}/sessions/{{sessionId}}/messages/cursor?limit=0&direction=BEFORE

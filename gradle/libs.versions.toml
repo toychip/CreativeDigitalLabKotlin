@@ -1,0 +1,66 @@
+[versions]
+javaVersion = "21"
+kotlin = "2.1.21"
+springBoot = "3.5.0"
+springDependencyManagement = "1.1.7"
+javaUuidGenerator = "5.1.0"
+springdoc = "2.8.14"
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
+
+[libraries]
+# Kotlin
+kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect" }
+
+# Spring Boot starters
+spring-boot-starter = { group = "org.springframework.boot", name = "spring-boot-starter" }
+spring-boot-starter-web = { group = "org.springframework.boot", name = "spring-boot-starter-web" }
+spring-boot-starter-websocket = { group = "org.springframework.boot", name = "spring-boot-starter-websocket" }
+spring-boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
+spring-boot-starter-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
+spring-boot-starter-redis = { group = "org.springframework.boot", name = "spring-boot-starter-data-redis" }
+spring-boot-starter-aop = { group = "org.springframework.boot", name = "spring-boot-starter-aop" }
+spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+
+# Spring Retry (for @Retryable + @Recover)
+spring-retry = { group = "org.springframework.retry", name = "spring-retry" }
+
+# DB
+mysql = { group = "com.mysql", name = "mysql-connector-j" }
+
+# Jackson (도메인 모듈에서 record + JSON annotation 만 사용)
+jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations" }
+jackson-databind    = { group = "com.fasterxml.jackson.core", name = "jackson-databind" }
+jackson-jsr310      = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310" }
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
+
+# UUID v7 생성기 (Java native 미지원이라 라이브러리 사용)
+java-uuid-generator = { group = "com.fasterxml.uuid", name = "java-uuid-generator", version.ref = "javaUuidGenerator" }
+
+# OpenAPI (springdoc) — Spring Boot BOM 에 없어 버전 명시
+springdoc-openapi-ui = { group = "org.springdoc", name = "springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# Test
+spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+
+[bundles]
+application = [
+    "spring-boot-starter",
+    "spring-boot-starter-jpa",
+    "spring-boot-starter-redis",
+    "spring-boot-starter-aop",
+    "spring-retry"
+]
+
+api = [
+    "spring-boot-starter-web",
+    "spring-boot-starter-websocket",
+    "spring-boot-starter-validation",
+    "spring-boot-starter-actuator"
+]

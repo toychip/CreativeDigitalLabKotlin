@@ -1,0 +1,17 @@
+plugins {
+    id 'chat-convention'
+}
+
+dependencies {
+    implementation project(':chat-application')
+    implementation project(':chat-domain')
+
+    implementation libs.spring.boot.starter.websocket
+    implementation libs.spring.boot.starter.redis
+    implementation libs.spring.boot.starter.jpa
+
+    implementation libs.jackson.databind
+    implementation libs.jackson.jsr310
+    implementation libs.jackson.module.kotlin
+    implementation libs.kotlin.reflect
+}

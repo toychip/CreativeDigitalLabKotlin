@@ -1,0 +1,82 @@
+@host = http://localhost:8080
+@sessionId = 019e6dfd-8ecf-73fe-a79c-112718a31060
+# @sessionId 는 예시 기본값. 1번(세션 생성) 실행 시 응답의 실제 sessionId 가 이 값을 덮어씀(전역변수).
+# @host 기본값은 환경(http-client.env.json)에서 local/nginx 선택 시 덮어씀.
+# 매 요청마다 client-id 는 달라야함.
+# 세션 lifecycle + 조회 + 시점 복원
+# 선행: user.http 로 alice, bob 등록
+# 1번(세션 생성) 응답의 sessionId 를 전역변수로 저장 → 이후 요청들이 {{sessionId}} 로 재사용
+
+### 1) 세션 생성 (생성자 alice 자동 참여: LifecycleEvent(ACTIVE)+UserEvent(JOINED))
+POST {{host}}/sessions
+Content-Type: application/json
+
+{
+  "creatorUserId": "alice",
+  "clientEventId": "create-001"
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+%}
+
+### 2) 세션 참여 - bob (UserEvent JOINED)
+POST {{host}}/sessions/{{sessionId}}/join
+Content-Type: application/json
+
+{
+  "userId": "bob",
+  "clientEventId": "join-bob-001"
+}
+
+### 3) 세션 목록 - 필터 없음 (sessionId 커서 최신순)
+GET {{host}}/sessions
+
+### 4) 세션 목록 - status 필터 + limit
+GET {{host}}/sessions?status=ACTIVE&limit=10
+
+### 5) 세션 목록 - 기간 필터 (LocalDateTime, Z 없음)
+GET {{host}}/sessions?from=2026-01-01T00:00:00&to=2026-12-31T23:59:59&limit=20
+
+### 6) 세션 단건 조회 (참여 이력: active + 퇴장 전체)
+GET {{host}}/sessions/{{sessionId}}
+
+### 7) 시점 복원 timeline - 현재 (at 없음, 전체 fold)
+GET {{host}}/sessions/{{sessionId}}/timeline
+
+### 8) 시점 복원 timeline - 특정 시점 (Instant, Z 포함)
+GET {{host}}/sessions/{{sessionId}}/timeline?at=2026-05-28T01:00:00Z
+
+### 9) 세션 중단 (SUSPENDED)
+POST {{host}}/sessions/{{sessionId}}/suspend
+Content-Type: application/json
+
+{
+  "clientEventId": "suspend-001"
+}
+
+### 10) 세션 퇴장 - bob (UserEvent LEFT)
+POST {{host}}/sessions/{{sessionId}}/leave
+Content-Type: application/json
+
+{
+  "userId": "bob",
+  "clientEventId": "leave-bob-001"
+}
+
+### 11) 세션 종료 (ENDED, terminal)
+POST {{host}}/sessions/{{sessionId}}/end
+Content-Type: application/json
+
+{
+  "clientEventId": "end-001"
+}
+
+### 12) (negative) 종료된 세션에 재참여 - 409 SESSION_ALREADY_ENDED 기대
+POST {{host}}/sessions/{{sessionId}}/join
+Content-Type: application/json
+
+{
+  "userId": "bob",
+  "clientEventId": "join-bob-after-end"
+}

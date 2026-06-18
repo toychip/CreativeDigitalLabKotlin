@@ -1,0 +1,16 @@
+plugins {
+    id 'chat-convention'
+}
+
+dependencies {
+    implementation project(':chat-domain')
+
+    implementation libs.bundles.application
+
+    implementation libs.jackson.databind
+    implementation libs.jackson.jsr310
+    implementation libs.jackson.module.kotlin
+    implementation libs.kotlin.reflect
+
+    runtimeOnly libs.mysql
+}

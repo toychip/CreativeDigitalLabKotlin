@@ -1,0 +1,11 @@
+.git
+.gitignore
+.gradle
+build/
+**/build/
+.idea
+*.iml
+docker/
+nginx/
+start-cluster.sh
+*.md

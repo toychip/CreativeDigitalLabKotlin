@@ -1,0 +1,13 @@
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'chat-cdl'
+
+include 'chat-domain'
+include 'chat-application'
+include 'chat-websocket'
+include 'chat-api'

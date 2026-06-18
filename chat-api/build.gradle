@@ -1,0 +1,24 @@
+plugins {
+    id 'chat-convention'
+}
+
+dependencies {
+    implementation project(':chat-application')
+    implementation project(':chat-websocket')
+    implementation project(':chat-domain')
+
+    implementation libs.bundles.api
+    implementation libs.spring.boot.starter.jpa
+    implementation libs.springdoc.openapi.ui
+
+    implementation libs.jackson.module.kotlin
+    implementation libs.kotlin.reflect
+}
+
+tasks.named('bootJar') {
+    enabled = true
+}
+
+tasks.named('jar') {
+    enabled = false
+}
