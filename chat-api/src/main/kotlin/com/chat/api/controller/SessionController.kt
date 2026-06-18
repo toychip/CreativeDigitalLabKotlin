@@ -12,6 +12,7 @@ import com.chat.application.session.SessionDetailResponse
 import com.chat.application.session.SessionPageResponse
 import com.chat.application.session.SessionQueryService
 import com.chat.application.session.TimelineResponse
+import com.chat.application.session.TimelineRestoreService
 import com.chat.domain.common.IdGenerator
 import com.chat.domain.event.UserEvent
 import com.chat.domain.session.SessionStatus
@@ -30,7 +31,8 @@ import java.time.LocalDateTime
 @RequestMapping("/sessions")
 class SessionController(
     private val chatEventService: ChatEventService,
-    private val sessionQueryService: SessionQueryService
+    private val sessionQueryService: SessionQueryService,
+    private val timelineRestoreService: TimelineRestoreService
 ) : SessionControllerDocs {
 
     @PostMapping
@@ -94,6 +96,10 @@ class SessionController(
     override fun getTimeline(
         @PathVariable sessionId: String,
         @RequestParam(required = false) at: Instant?
-    ): TimelineResponse =
-        sessionQueryService.getTimeline(sessionId, at)
+    ): TimelineResponse {
+        // 1) 이벤트 조회 — 트랜잭션/커넥션은 여기까지만 점유
+        val events = sessionQueryService.loadTimelineEvents(sessionId, at)
+        // 2) fold(replay) — 트랜잭션 밖, 커넥션 미점유
+        return timelineRestoreService.restore(events)
+    }
 }

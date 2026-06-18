@@ -2,9 +2,9 @@ package com.chat.application.session
 
 import com.chat.application.event.EventRepository
 import com.chat.application.sessionuser.SessionUserRepository
+import com.chat.domain.event.ChatEvent
 import com.chat.domain.exception.CdlException
 import com.chat.domain.exception.ExceptionCode
-import com.chat.domain.session.ChatSession
 import com.chat.domain.session.SessionStatus
 import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Service
@@ -35,7 +35,7 @@ class SessionQueryServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun getTimeline(sessionId: String, at: Instant?): TimelineResponse {
+    override fun loadTimelineEvents(sessionId: String, at: Instant?): List<ChatEvent> {
         if (!sessionRepository.existsById(sessionId)) {
             throw CdlException(ExceptionCode.SESSION_NOT_FOUND)
         }
@@ -44,9 +44,7 @@ class SessionQueryServiceImpl(
         } else {
             eventRepository.findAllBySessionId(sessionId)
         }
-        val events = entities.map { it.toDomain() }
-        val session = ChatSession.loadFromEvents(events)
-        return TimelineResponse.from(session)
+        return entities.map { it.toDomain() }
     }
 
     companion object {
