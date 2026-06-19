@@ -40,7 +40,13 @@ class SessionQueryServiceImpl(
             throw CdlException(ExceptionCode.SESSION_NOT_FOUND)
         }
         val entities = if (at != null) {
-            eventRepository.findEventsUpTo(sessionId, at)
+            // created_at 은 서버별 시계(클럭 스큐·브로드캐스트 역전)라 신뢰 불가.
+            // at 이전(포함) 이벤트 중 max(seq) 를 경계로 잡고 seq <= 경계 인 연속 prefix 를 복원 → 결정적.
+            val boundary = eventRepository.findMaxSeqUpTo(sessionId, at)
+            if (boundary.isEmpty) {
+                return emptyList()
+            }
+            eventRepository.findEventsUpToSeq(sessionId, boundary.get())
         } else {
             eventRepository.findAllBySessionId(sessionId)
         }

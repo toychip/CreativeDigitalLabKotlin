@@ -103,6 +103,8 @@ events 커밋 직후 AFTER_COMMIT 으로 둘 실행 — 읽기 모델 갱신(Pro
 
 `GET /sessions/{id}/timeline?at=t` → events 를 t 까지 가져와 ChatSession 으로 접어 그 시점의 참여자·메시지(상태 포함)·세션 상태 재구성. 저장 없이 매번 재생 → 항상 동일 결과. 중복은 fold 가 흡수(같은 messageId 덮어쓰기, 참여자 Set), 순서는 seq 정렬
 
+복원 경계도 seq 기준. created_at 은 서버별 시계(클럭 스큐·브로드캐스트 역전)라 신뢰 불가 → 시간(at)으로 바로 자르면 seq 와 어긋나 구멍 난 prefix 가 될 수 있다. 그래서 `max(seq) WHERE created_at<=t` 로 경계 seq 를 정하고 `seq<=경계` 연속 prefix 를 fold → 원자적 seq 기준의 결정적 복원. 조회(@Transactional)와 fold(인메모리, 트랜잭션 밖 TimelineRestoreService)도 분리해 fold 가 길어져도 커넥션을 점유하지 않음
+
 ## 쿼리 최적화
 
 메시지 스크롤:
@@ -111,11 +113,14 @@ SELECT * FROM messages WHERE session_id=? AND seq<? ORDER BY seq DESC LIMIT ?;
 ```
 idx_message_session_seq 사용. OFFSET 대신 seq 커서 → 깊은 페이지에서도 비용 일정, COUNT 미사용
 
-시점 복원:
+시점 복원 (2단계 — 시간으로 경계 seq 만 찾고, 복원은 seq prefix):
 ```sql
-SELECT * FROM events WHERE session_id=? AND created_at<=? ORDER BY seq;
+-- 1) 경계 seq (idx_events_session_created 범위 스캔)
+SELECT MAX(seq) FROM events WHERE session_id=? AND created_at<=?;
+-- 2) seq 연속 prefix (uk_events_session_seq 활용)
+SELECT * FROM events WHERE session_id=? AND seq<=? ORDER BY seq;
 ```
-idx_events_session_created 범위 스캔. 이벤트 누적 시 스냅샷으로 단축
+created_at 은 서버별 시계라 신뢰 불가 → 경계 탐색에만 쓰고 복원은 원자적 seq 기준. 이벤트 누적 시 스냅샷으로 단축
 
 세션 목록: status·기간 필터 + PK 커서(session_id < cursor). UUID v7 시간순 → 별도 정렬 인덱스 없이 최신순
 

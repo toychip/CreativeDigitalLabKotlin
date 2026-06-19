@@ -9,14 +9,10 @@ import java.util.Optional
 @Repository
 interface SessionUserRepository : JpaRepository<SessionUserEntity, Long> {
 
-    fun findBySessionIdAndIsActiveTrue(sessionId: String): List<SessionUserEntity>
-
     /** 참여 이력 전체 (active + 퇴장), 참여 순 */
     fun findBySessionIdOrderByJoinedAtAsc(sessionId: String): List<SessionUserEntity>
 
     fun findByUserIdAndIsActiveTrue(userId: String): List<SessionUserEntity>
-
-    fun findBySessionIdAndUserIdAndIsActiveTrue(sessionId: String, userId: String): Optional<SessionUserEntity>
 
     /** isActive 무관하게 조회 — rejoin 시 기존 row 찾기용 */
     fun findBySessionIdAndUserId(sessionId: String, userId: String): Optional<SessionUserEntity>

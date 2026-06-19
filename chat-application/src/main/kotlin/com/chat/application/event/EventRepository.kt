@@ -11,35 +11,36 @@ interface EventRepository : JpaRepository<EventEntity, String> {
     fun existsBySessionId(sessionId: String): Boolean
 
     /**
-     * 재연결 catch-up: 클라가 가진 seq 이후의 이벤트들 시간순 반환
-     * {@code uk_event_session_seq} 인덱스 활용.
+     * 시점 복원 경계: created_at <= at 인 이벤트 중 가장 큰 seq.
+     * created_at 은 서버별 시계(클럭 스큐·브로드캐스트 역전)라 신뢰 불가 → 이 seq 를 경계로 잡아
+     * seq 연속 prefix 를 복원한다. {@code idx_events_session_created} 범위 스캔.
+     * at 이전 이벤트가 없으면 Optional.empty().
      */
     @Query(
         """
-        SELECT e FROM EventEntity e
-        WHERE e.sessionId = :sessionId AND e.seq > :afterSeq
-        ORDER BY e.seq
-        """
-    )
-    fun findEventsAfterSeq(
-        @Param("sessionId") sessionId: String,
-        @Param("afterSeq") afterSeq: Long
-    ): List<EventEntity>
-
-    /**
-     * 시점 복원: 특정 시각 이전(포함) 이벤트들 seq 순 반환
-     * {@code idx_session_created} 로 범위 스캔, seq 정렬은 deterministic 보장 (created_at 동값 대비)
-     */
-    @Query(
-        """
-        SELECT e FROM EventEntity e
+        SELECT MAX(e.seq) FROM EventEntity e
         WHERE e.sessionId = :sessionId AND e.createdAt <= :at
-        ORDER BY e.seq
         """
     )
-    fun findEventsUpTo(
+    fun findMaxSeqUpTo(
         @Param("sessionId") sessionId: String,
         @Param("at") at: Instant
+    ): Optional<Long>
+
+    /**
+     * 시점 복원: seq <= :maxSeq 인 이벤트들 seq 순(연속 prefix) 반환.
+     * {@code uk_events_session_seq} 인덱스 활용. 시계가 아닌 원자적 seq 기준이라 결정적.
+     */
+    @Query(
+        """
+        SELECT e FROM EventEntity e
+        WHERE e.sessionId = :sessionId AND e.seq <= :maxSeq
+        ORDER BY e.seq
+        """
+    )
+    fun findEventsUpToSeq(
+        @Param("sessionId") sessionId: String,
+        @Param("maxSeq") maxSeq: Long
     ): List<EventEntity>
 
     /**
