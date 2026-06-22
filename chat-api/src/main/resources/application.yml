@@ -2,6 +2,10 @@ spring:
   application:
     name: chat-cdl
 
+  # graceful shutdown: SIGTERM 시 신규 요청 거부 + in-flight 완료 대기(아래 server.shutdown=graceful 와 함께 동작)
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:creative-digital-lab-chat}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: ${DB_USERNAME:root}
@@ -45,6 +49,7 @@ spring:
 
 server:
   port: 8080
+  shutdown: graceful
   tomcat:
     threads:
       max: 300
