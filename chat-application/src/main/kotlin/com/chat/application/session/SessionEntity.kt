@@ -15,8 +15,8 @@ import java.time.LocalDateTime
 @Table(
     name = "sessions",
     indexes = [
-        Index(name = "idx_session_status", columnList = "status"),
-        Index(name = "idx_session_started_at", columnList = "started_at")
+        Index(name = "idx_sessions_status", columnList = "status"),
+        Index(name = "idx_sessions_started_at", columnList = "started_at")
     ]
 )
 class SessionEntity private constructor(
