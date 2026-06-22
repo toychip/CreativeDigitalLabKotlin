@@ -1,3 +1,8 @@
 package com.chat.api.dto
 
-data class SessionCreateRequest(val creatorUserId: String, val clientEventId: String)
+import jakarta.validation.constraints.NotBlank
+
+data class SessionCreateRequest(
+    @field:NotBlank val creatorUserId: String,
+    @field:NotBlank val clientEventId: String
+)

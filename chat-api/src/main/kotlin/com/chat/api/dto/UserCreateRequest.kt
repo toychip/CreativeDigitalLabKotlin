@@ -1,3 +1,8 @@
 package com.chat.api.dto
 
-data class UserCreateRequest(val userId: String, val username: String)
+import jakarta.validation.constraints.NotBlank
+
+data class UserCreateRequest(
+    @field:NotBlank val userId: String,
+    @field:NotBlank val username: String
+)

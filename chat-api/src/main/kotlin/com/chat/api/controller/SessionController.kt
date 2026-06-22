@@ -17,6 +17,7 @@ import com.chat.domain.common.IdGenerator
 import com.chat.domain.event.UserEvent
 import com.chat.domain.session.SessionStatus
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -36,7 +37,7 @@ class SessionController(
 ) : SessionControllerDocs {
 
     @PostMapping
-    override fun createSession(@RequestBody request: SessionCreateRequest): SessionCreateResponse {
+    override fun createSession(@Validated @RequestBody request: SessionCreateRequest): SessionCreateResponse {
         val sessionId = IdGenerator.generate()
         chatEventService.createSession(sessionId, request.clientEventId, request.creatorUserId)
         return SessionCreateResponse(sessionId)
@@ -45,7 +46,7 @@ class SessionController(
     @PostMapping("/{sessionId}/join")
     override fun joinSession(
         @PathVariable sessionId: String,
-        @RequestBody request: UserSessionRequest
+        @Validated @RequestBody request: UserSessionRequest
     ) {
         chatEventService.appendUser(
             UserCommand(sessionId, request.clientEventId, request.userId, UserEvent.Type.JOINED))
@@ -54,7 +55,7 @@ class SessionController(
     @PostMapping("/{sessionId}/leave")
     override fun leaveSession(
         @PathVariable sessionId: String,
-        @RequestBody request: UserSessionRequest
+        @Validated @RequestBody request: UserSessionRequest
     ) {
         chatEventService.appendUser(
             UserCommand(sessionId, request.clientEventId, request.userId, UserEvent.Type.LEFT))
@@ -63,7 +64,7 @@ class SessionController(
     @PostMapping("/{sessionId}/suspend")
     override fun suspendSession(
         @PathVariable sessionId: String,
-        @RequestBody request: ClientEventRequest
+        @Validated @RequestBody request: ClientEventRequest
     ) {
         chatEventService.appendLifecycle(
             LifecycleCommand(sessionId, request.clientEventId, SessionStatus.SUSPENDED))
@@ -72,7 +73,7 @@ class SessionController(
     @PostMapping("/{sessionId}/end")
     override fun endSession(
         @PathVariable sessionId: String,
-        @RequestBody request: ClientEventRequest
+        @Validated @RequestBody request: ClientEventRequest
     ) {
         chatEventService.appendLifecycle(
             LifecycleCommand(sessionId, request.clientEventId, SessionStatus.ENDED))
