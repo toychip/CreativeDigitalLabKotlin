@@ -1,6 +1,5 @@
 package com.chat.application.session
 
-import com.chat.application.sessionuser.SessionUserEntity
 import com.chat.domain.session.SessionStatus
 import java.time.LocalDateTime
 
@@ -12,13 +11,13 @@ data class SessionDetailResponse(
     val participants: List<ParticipantView>
 ) {
     companion object {
-        fun of(session: SessionEntity, members: List<SessionUserEntity>): SessionDetailResponse =
+        fun of(session: SessionEntity, participants: List<ParticipantView>): SessionDetailResponse =
             SessionDetailResponse(
                 session.sessionId,
                 session.status,
                 session.startedAt,
                 session.endedAt,
-                members.map { ParticipantView.from(it) }
+                participants
             )
     }
 }

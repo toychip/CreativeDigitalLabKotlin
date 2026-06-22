@@ -1,6 +1,7 @@
 package com.chat.application.session
 
 import com.chat.application.event.EventRepository
+import com.chat.application.presence.PresenceService
 import com.chat.application.sessionuser.SessionUserRepository
 import com.chat.domain.event.ChatEvent
 import com.chat.domain.exception.CdlException
@@ -16,7 +17,8 @@ import java.time.LocalDateTime
 class SessionQueryServiceImpl(
     private val sessionRepository: SessionRepository,
     private val sessionUserRepository: SessionUserRepository,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    private val presenceService: PresenceService
 ) : SessionQueryService {
 
     @Transactional(readOnly = true)
@@ -24,7 +26,8 @@ class SessionQueryServiceImpl(
         val session = sessionRepository.findById(sessionId)
             .orElseThrow { CdlException(ExceptionCode.SESSION_NOT_FOUND) }
         val members = sessionUserRepository.findBySessionIdOrderByJoinedAtAsc(sessionId)
-        return SessionDetailResponse.of(session, members)
+        val participants = members.map { ParticipantView.from(it, presenceService.isOnline(it.userId)) }
+        return SessionDetailResponse.of(session, participants)
     }
 
     @Transactional(readOnly = true)

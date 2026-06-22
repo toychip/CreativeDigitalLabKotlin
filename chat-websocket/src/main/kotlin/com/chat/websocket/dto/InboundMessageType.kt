@@ -6,7 +6,8 @@ import com.chat.domain.exception.ExceptionCode
 enum class InboundMessageType {
     SEND_MESSAGE,
     EDIT_MESSAGE,
-    DELETE_MESSAGE
+    DELETE_MESSAGE,
+    HEALTHCHECK
 
     ;
 

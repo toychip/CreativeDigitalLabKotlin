@@ -1,5 +1,6 @@
 package com.chat.websocket.handler
 
+import com.chat.application.presence.PresenceService
 import com.chat.application.service.ChatEventService
 import com.chat.application.service.command.MessageCommand
 import com.chat.application.sessionuser.SessionUserRepository
@@ -27,6 +28,7 @@ class ChatWebSocketHandler(
     private val chatEventService: ChatEventService,
     private val sessionUserRepository: SessionUserRepository,
     private val userRepository: UserRepository,
+    private val presenceService: PresenceService,
     @Qualifier("distributedObjectMapper") private val objectMapper: ObjectMapper
 ) : WebSocketHandler {
 
@@ -34,6 +36,7 @@ class ChatWebSocketHandler(
         val userId = getUserId(wsConnection) ?: return
 
         registry.addWsConnection(userId, wsConnection)
+        presenceService.heartbeat(userId)
         log.info("Connection established for userId={}", userId)
         try {
             subscribeActiveSessions(userId)
@@ -60,8 +63,12 @@ class ChatWebSocketHandler(
                 InboundMessageType.SEND_MESSAGE -> handleSendMessage(userId, root)
                 InboundMessageType.EDIT_MESSAGE -> handleEditMessage(userId, root)
                 InboundMessageType.DELETE_MESSAGE -> handleDeleteMessage(userId, root)
+                InboundMessageType.HEALTHCHECK -> presenceService.heartbeat(userId)
             }
-            touchLastSeen(userId)
+            // HEALTHCHECK 는 휘발성 하트비트 — 매번 DB(last_seen_at) 쓰지 않음(쓰기 증폭 회피). online 은 Redis TTL 로만.
+            if (type != InboundMessageType.HEALTHCHECK) {
+                touchLastSeen(userId)
+            }
         } catch (e: CdlException) {
             log.warn("CdlException: code={}, detail={}", e.code, e.detail)
             sendError(wsConnection, e, clientEventId)
@@ -80,6 +87,7 @@ class ChatWebSocketHandler(
         }
         if (userId != null) {
             registry.removeWsConnection(userId, wsConnection)
+            markOfflineIfNoLocalConnections(userId)
         }
     }
 
@@ -88,7 +96,16 @@ class ChatWebSocketHandler(
         if (userId != null) {
             registry.removeWsConnection(userId, wsConnection)
             touchLastSeen(userId)
+            markOfflineIfNoLocalConnections(userId)
             log.info("Connection removed for userId={}", userId)
+        }
+    }
+
+    // 이 유저의 로컬 연결이 모두 사라졌으면 즉시 offline. 남은 연결이 있으면(멀티 디바이스) 유지.
+    // 비정상 종료로 이 경로가 안 불려도 presence TTL 이 만료되며 결국 offline 으로 수렴한다.
+    private fun markOfflineIfNoLocalConnections(userId: String) {
+        if (!registry.isUserOnlineLocally(userId)) {
+            presenceService.markOffline(userId)
         }
     }
 

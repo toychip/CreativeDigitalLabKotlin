@@ -95,9 +95,9 @@ events 커밋 직후 AFTER_COMMIT 으로 둘 실행 — 읽기 모델 갱신(Pro
 
 ## Presence
 
-"참여" 와 "접속" 은 다른 층위. 참여(세션 멤버 여부)는 session_users.is_active 로 영구 보관, 접속(현재 연결 여부)은 일시적이라 인스턴스 메모리 + users.last_seen_at(마지막 접속 시각)
+"참여" 와 "접속" 은 다른 층위. 참여(세션 멤버 여부)는 session_users.is_active 로 영구 보관, 접속(현재 연결 여부)은 일시적이라 Redis presence 키 + users.last_seen_at(마지막 접속 시각)
 
-현재 online 판정은 그 인스턴스 메모리 기준 → 다른 인스턴스에 붙은 유저는 못 봄. 정확한 분산 presence 는 Redis `presence:{userId}` TTL 키(heartbeat 갱신) 공유로 가능, 미구현. 1:1 이지만 session_users 는 N명 허용 일반 설계, 1:1 은 참여자 2명 케이스로 간주
+online/offline 은 HEALTHCHECK 하트비트 기반 분산 presence 로 판정한다. 클라가 WS 로 `{"type":"HEALTHCHECK"}` 를 주기적으로(권장 ~10s) 보내면 서버가 `presence:{userId}` Redis 키의 TTL(30s)을 갱신한다. TTL 안에 다음 하트비트가 안 오면(크래시·무응답) 키가 자동 만료되어 offline. 인스턴스 메모리가 아니라 Redis 라 어느 노드에 붙어도 동일하게 판정된다(README 의 기존 "메모리 기준 한계" 해소). 연결 시 즉시 online, 정상 종료 시 로컬 연결이 모두 사라지면 즉시 offline(비정상 종료는 TTL 로 수렴). HEALTHCHECK 는 채팅이 아닌 휘발성 신호라 events 에 저장하지 않고 last_seen_at DB 쓰기도 트리거하지 않음. online 여부는 세션 단건 조회(`GET /sessions/{id}`) 응답의 참여자 `online` 필드로 노출(조회 시 `EXISTS presence:{userId}`). 상대에게 실시간 push(전이 알림)는 미구현 — 조회 시 판정만. 1:1 이지만 session_users 는 N명 허용 일반 설계, 1:1 은 참여자 2명 케이스로 간주
 
 ## 시점 복원
 
@@ -163,7 +163,7 @@ ws://<host>/ws/chat?userId=<userId>
 
 ### 클라이언트 → 서버 (인바운드)
 
-세 가지 `type` 을 보낸다. 모두 `clientEventId` 로 멱등 처리되어, 네트워크 재전송 시 중복 저장이 차단된다.
+네 가지 `type` 을 보낸다. 메시지 3종은 모두 `clientEventId` 로 멱등 처리되어, 네트워크 재전송 시 중복 저장이 차단된다. HEALTHCHECK 는 presence 하트비트라 sessionId/clientEventId 가 필요 없고 events 에 저장되지 않는다.
 
 메시지 전송
 ```json
@@ -178,6 +178,11 @@ ws://<host>/ws/chat?userId=<userId>
 메시지 삭제
 ```json
 { "type": "DELETE_MESSAGE", "sessionId": "<sessionId>", "clientEventId": "<uuid>", "messageId": "<messageId>" }
+```
+
+하트비트 (presence — 주기적으로 전송, 응답 없음)
+```json
+{ "type": "HEALTHCHECK" }
 ```
 
 ### 서버 → 클라이언트 (아웃바운드)
